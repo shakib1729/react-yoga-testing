@@ -11,20 +11,24 @@ function App() {
   const canvasRef = useRef(null);
   const [isDetecting, setIsDetecting] = useState(false);
   const [intervalVar, setIntervalVar] = useState(null);
-  const [poseNetModel, setPoseNet] = useState(null);
+  const [timerVar, setTimerVar] = useState(null);
+  const [poseNetModel, setPoseNetModel] = useState(null);
   const [model, setModel] = useState(null);
+  const [timer, setTimer] = useState(10);
+
+  const timerRef = useRef(timer);
+  timerRef.current = timer;
 
   useEffect(() => {
-    // Load the posenet model
     const loadModels = async () => {
-      const net = await posenet.load({
+      // Load the posenet model
+      const loadedPoseNetModel = await posenet.load({
         inputResolution: { width: 426, height: 240 },
         scale: 0.5,
       });
-      setPoseNet(net);
+      setPoseNetModel(loadedPoseNetModel);
 
       // Load the trained neural network model
-      // const response = await fetch('/data/Y.csv');
       const loadedModel = await tf.loadLayersModel('/model/my-model.json');
       setModel(loadedModel);
       // loadedModel.summary();
@@ -97,9 +101,22 @@ function App() {
     if (isDetecting) {
       setIsDetecting(false);
       clearInterval(intervalVar);
+      clearInterval(timerVar);
+      setTimer(10);
     } else {
       setIsDetecting(true);
-      runPosenet();
+      setTimer(10);
+      const timerVar = setInterval(() => {
+        console.log(timerRef.current);
+        setTimer(timerRef.current - 1);
+      }, 1000);
+      setTimerVar(timerVar);
+
+      // Run detection after 10 seconds
+      setTimeout(() => {
+        clearInterval(timerVar);
+        runPosenet();
+      }, 10000);
     }
   };
 
@@ -108,6 +125,7 @@ function App() {
       <button onClick={changeIsDetecting}>
         <h4> {isDetecting ? 'Stop detecting' : 'Start detecting'} </h4>
       </button>
+      {timer}
       <header className='App-header'>
         {isDetecting ? (
           <>

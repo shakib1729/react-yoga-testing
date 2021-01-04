@@ -15,9 +15,22 @@ function App() {
   const [poseNetModel, setPoseNetModel] = useState(null);
   const [model, setModel] = useState(null);
   const [timer, setTimer] = useState(10);
+  const [currPose, setCurrPose] = useState(0);
 
   const timerRef = useRef(timer);
   timerRef.current = timer;
+
+  const currPoseRef = useRef(currPose);
+  currPoseRef.current = currPose;
+
+  const isDetectingRef = useRef(isDetecting);
+  isDetectingRef.current = isDetecting;
+
+  const intervalVarRef = useRef(intervalVar);
+  intervalVarRef.current = intervalVar;
+
+  const timerVarRef = useRef(timerVar);
+  timerVarRef.current = timerVar;
 
   useEffect(() => {
     const loadModels = async () => {
@@ -41,6 +54,17 @@ function App() {
       detect();
     }, 100);
     setIntervalVar(newInterval);
+
+    // Stop detecting after 10 seconds
+    setTimer(10);
+    const timerVar = setInterval(() => {
+      setTimer(timerRef.current - 1);
+      if (timerRef.current == 0) {
+        clearInterval(timerVar);
+        changeIsDetecting();
+      }
+    }, 1000);
+    setTimerVar(timerVar);
   };
 
   const detect = async () => {
@@ -83,7 +107,14 @@ function App() {
     const inputTensor = tf.tensor2d(input, [1, input.length]);
     const prediction = model.predict(inputTensor);
     const predictedClass = prediction.argMax(-1).dataSync();
-    console.log(predictedClass[0]);
+    console.log(
+      'Predicted: ',
+      predictedClass[0],
+      ' Current:  ',
+      currPoseRef.current
+    );
+    if (predictedClass[0] == currPoseRef.current) console.log('Yes');
+    else console.log('No');
   };
 
   const drawCanvas = (pose, videoWidth, videoHeight, canvas) => {
@@ -97,35 +128,40 @@ function App() {
     }
   };
 
-  const changeIsDetecting = () => {
-    if (isDetecting) {
-      setIsDetecting(false);
-      clearInterval(intervalVar);
-      clearInterval(timerVar);
-      setTimer(10);
-    } else {
-      setIsDetecting(true);
-      setTimer(10);
-      const timerVar = setInterval(() => {
-        console.log(timerRef.current);
-        setTimer(timerRef.current - 1);
-      }, 1000);
-      setTimerVar(timerVar);
+  const resetStates = () => {
+    setIsDetecting(false);
+    clearInterval(intervalVarRef.current);
+    clearInterval(timerVarRef.current);
+    setTimer(10);
+  };
 
-      // Run detection after 10 seconds
-      setTimeout(() => {
+  const startDetecting = (pose) => {
+    setCurrPose(pose);
+    setIsDetecting(true);
+    const timerVar = setInterval(() => {
+      setTimer(timerRef.current - 1);
+      if (timerRef.current == 0) {
         clearInterval(timerVar);
         runPosenet();
-      }, 10000);
-    }
+      }
+    }, 1000);
+    setTimerVar(timerVar);
+  };
+  const changeIsDetecting = (pose) => {
+    if (isDetectingRef.current) resetStates();
+    else startDetecting(pose);
   };
 
   return (
     <div className='App'>
-      <button onClick={changeIsDetecting}>
-        <h4> {isDetecting ? 'Stop detecting' : 'Start detecting'} </h4>
+      Current pose: {currPose}
+      <button onClick={() => changeIsDetecting(0)}>
+        <h4> {isDetecting ? 'Stop detecting' : 'Detect pose 0'} </h4>
       </button>
-      {timer}
+      Current Timer: {timer}
+      <button onClick={() => changeIsDetecting(1)}>
+        <h4> {isDetecting ? 'Stop detecting' : 'Detect pose 1'} </h4>
+      </button>
       <header className='App-header'>
         {isDetecting ? (
           <>

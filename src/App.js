@@ -16,6 +16,7 @@ function App() {
   const [model, setModel] = useState(null);
   const [timer, setTimer] = useState(10);
   const [currPose, setCurrPose] = useState(0);
+  const [scores, setScores] = useState([0, 0]);
 
   const timerRef = useRef(timer);
   timerRef.current = timer;
@@ -31,6 +32,9 @@ function App() {
 
   const timerVarRef = useRef(timerVar);
   timerVarRef.current = timerVar;
+
+  const scoresRef = useRef(scores);
+  scoresRef.current = scores;
 
   useEffect(() => {
     const loadModels = async () => {
@@ -113,8 +117,20 @@ function App() {
       ' Current:  ',
       currPoseRef.current
     );
-    if (predictedClass[0] == currPoseRef.current) console.log('Yes');
-    else console.log('No');
+    if (predictedClass[0] == currPoseRef.current) {
+      // We made a correct prediction,
+      // so increment the score of current pose
+
+      setScores(
+        scoresRef.current.map((currScore, idx) => {
+          if (idx == currPoseRef.current) return currScore + 1;
+          else return currScore;
+        })
+      );
+      console.log('Yes');
+    } else {
+      console.log('No');
+    }
   };
 
   const drawCanvas = (pose, videoWidth, videoHeight, canvas) => {
@@ -154,14 +170,21 @@ function App() {
 
   return (
     <div className='App'>
-      Current pose: {currPose}
+      Current Pose: {currPose}
       <button onClick={() => changeIsDetecting(0)}>
         <h4> {isDetecting ? 'Stop detecting' : 'Detect pose 0'} </h4>
       </button>
-      Current Timer: {timer}
+      Timer: {timer}
       <button onClick={() => changeIsDetecting(1)}>
         <h4> {isDetecting ? 'Stop detecting' : 'Detect pose 1'} </h4>
       </button>
+      {scores.map((score, idx) => {
+        return (
+          <li key={idx}>
+            Pose {idx}: {score}
+          </li>
+        );
+      })}
       <header className='App-header'>
         {isDetecting ? (
           <>
